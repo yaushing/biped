@@ -7,10 +7,9 @@ from pubsub import pub
 
 class Servo:
 
-    def __init__(self, pin, identifier, pwm_range, index, **kwargs):
+    def __init__(self, pin, identifier, pwm_range, **kwargs):
         self.pin = pin
         self.identifier = identifier
-        self.index = index
         self.range = pwm_range
         self.power = kwargs.get('power', True)
 
@@ -34,25 +33,18 @@ class Servo:
         pass #self.reset()
 
     def move_relative(self, percentage, safe=True):
-        # Only calculate relative position if not using serial
-        # Otherwise it is done by the arduino
-        if not self.serial:
-            new = self.pos + (self.translate(percentage) - self.range[0])
-        
-        
-            if new > self.range[1] and safe:
-                new = self.range[1]
-            elif new < self.range[0] and safe:
-                new = self.range[0]
-            if self.range[0] <= new <= self.range[1]:
-                this_move = self.calculate_move(self.pos, new)
-                self.execute_move(this_move, True)
-                self.pos = new
-            else:
-                pub.sendMessage('log:error', '[Servo] Percentage %d out of range' % percentage)
-                raise ValueError('Percentage %d out of range' % percentage)
+        new = self.pos + (self.translate(percentage) - self.range[0])
+        if new > self.range[1] and safe:
+            new = self.range[1]
+        elif new < self.range[0] and safe:
+            new = self.range[0]
+        if self.range[0] <= new <= self.range[1]:
+            this_move = self.calculate_move(self.pos, new)
+            self.execute_move(this_move)
+            self.pos = new
         else:
-            self.execute_move([(percentage, 0)], True)
+            pub.sendMessage('log:error', '[Servo] Percentage %d out of range' % percentage)
+            raise ValueError('Percentage %d out of range' % percentage)
 
     def move(self, percentage, safe=True):
         if 0 <= percentage <= 100 or safe:
@@ -61,13 +53,13 @@ class Servo:
                 new = self.range[1]
             elif new < self.range[0] and safe:
                 new = self.range[0]
-            self.execute_move([(percentage, 0)])
+            self.execute_move(self.calculate_move(self.pos, new))
             self.pos = new
         else:
             pub.sendMessage('log:error', '[Servo] Percentage %d out of range' % percentage)
             raise ValueError('Percentage %d out of range' % percentage)
 
-    def execute_move(self, sequence, is_relative=False):
+    def execute_move(self, sequence):
         """
         Recursive function to handle each movement in sequence.
         Move to first position then set thread.Timer for next movement after delay specified in movement 1.
@@ -85,13 +77,8 @@ class Servo:
         if self.power:
             pub.sendMessage('power:use')
         if self.serial:
-            # just move the pan servo for now. Remove after debugging
-            # if self.index != 7 and self.index != 6 and self.index != 5 and self.index != 4  and self.index != 3  and self.index != 2:
-                # return
-            type = ArduinoSerial.DEVICE_SERVO
-            if is_relative:
-                type = ArduinoSerial.DEVICE_SERVO_RELATIVE
-            pub.sendMessage('serial', type=type, identifier=self.index, message=s[0])
+            # print(int(s[0]))
+            pub.sendMessage('serial', type=ArduinoSerial.DEVICE_SERVO, identifier=self.pin, message=s[0])
         else:
             self.pi.set_servo_pulsewidth(self.pin, s[0])
         if len(sequence) > 1:

@@ -42,6 +42,12 @@ class Feel:
         if self.state.behaviours.motion.is_motion():
             self.input(Feel.INPUT_TYPE_COMPANY)
 
+        # Update head LEDs
+        pub.sendMessage('led', identifiers='top1', color=self.wakefulness)  # left
+        pub.sendMessage('led', identifiers='top2', color=self.attention)
+        pub.sendMessage('led', identifiers='top3', color=self.happiness)
+        pub.sendMessage('led', identifiers='top4', color=self.contentment)  # right
+
     def feel(self):
         # Get gradually bored and tired
         self.attention = self.limit(self.attention - randint(5,10))
@@ -53,8 +59,6 @@ class Feel:
     def loop_minute(self):
         # print(f"[Feelings] {str(self.attention)} {str(self.happiness)} {str(self.wakefulness)} {str(self.contentment)}")
         pub.sendMessage('log', msg='[Feeling]' + str(self.get_feelings()))
-        pub.sendMessage('led', identifiers='status3', color=self.attention, gradient='bg')
-        pub.sendMessage('led', identifiers='status4', color=self.happiness, gradient='bg')
 
     def get_feelings(self):
         feelings = []

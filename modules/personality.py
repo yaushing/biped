@@ -12,8 +12,6 @@ from modules.behaviours.boredom import Boredom
 from modules.behaviours.feel import Feel
 from modules.behaviours.sleep import Sleep
 from modules.behaviours.respond import Respond
-from modules.behaviours.objects import Objects
-from modules.behaviours.sentiment import Sentiment
 
 from types import SimpleNamespace
 
@@ -38,41 +36,30 @@ class Personality:
         self.eye = 'blue'
 
         pub.subscribe(self.loop, 'loop:1')
-        pub.subscribe(self.process_sentiment, 'sentiment')
-        
+
         behaviours = { 'boredom': Boredom(self),
                        'dream': Dream(self),
                        'faces': Faces(self),
                        'motion': Motion(self),
                        'sleep': Sleep(self),
                        'feel': Feel(self),
-                       'objects': Objects(self),
-                       'respond': Respond(self),
-                       'sentiment': Sentiment(self)}
+                       'respond': Respond(self)}
 
         self.behaviours = SimpleNamespace(**behaviours)
 
     def loop(self):
-        # pub.sendMessage('speech', msg="Hello, I am happy") # for testing sentiment responses
-        if not self.is_asleep() and not self.behaviours.faces.face_detected and not self.behaviours.motion.is_motion() and not self.behaviours.objects.is_detected:
+        if not self.is_asleep() and not self.behaviours.faces.face_detected and not self.behaviours.motion.is_motion():
             self.set_eye('red')
 
-        if self.state == Config.STATE_ALERT and self.lt(self.behaviours.faces.last_face, self.past(2*60)) and self.lt(self.behaviours.objects.last_detection, self.past(2*60)):
+        if self.state == Config.STATE_ALERT and self.lt(self.behaviours.faces.last_face, self.past(2*60)):
             # reset to idle position after 2 minutes inactivity
             pub.sendMessage('animate', action="wake")
             self.set_state(Config.STATE_IDLE)
 
-    def process_sentiment(self, score):
-        pub.sendMessage('log', msg="[Personality] Sentiment: " + str(score))
-        if score > 0:
-            pub.sendMessage('piservo:move', angle=0)
-        else:
-            pub.sendMessage('piservo:move', angle=40)
-        
     def set_eye(self, color):
         if self.eye == color:
             return
-        # pub.sendMessage('led', identifiers=['left', 'right'], color='off')
+        pub.sendMessage('led', identifiers=['left', 'right'], color='off')
         pub.sendMessage('led:eye', color=color)
         self.eye = color
 
@@ -86,30 +73,22 @@ class Personality:
             pub.sendMessage("animate", action="sleep")
             pub.sendMessage("animate", action="sit")
             pub.sendMessage("led:off")
-            pub.sendMessage("led", identifiers=['status1'], color="off")
-            pub.sendMessage('piservo:move', angle=0)
         elif state == Config.STATE_RESTING:
             pub.sendMessage('rest')
             pub.sendMessage("animate", action="sit")
             pub.sendMessage("animate", action="sleep")
             self.set_eye('blue')
-            pub.sendMessage("led", identifiers=['status1'], color="red")
-            pub.sendMessage('piservo:move', angle=-40)
         elif state == Config.STATE_IDLE:
             if self.state == Config.STATE_RESTING or self.state == Config.STATE_SLEEPING:
                 pub.sendMessage('wake')
                 pub.sendMessage('animate', action="wake")
             pub.sendMessage('animate', action="sit")
-            pub.sendMessage("led", identifiers=['status1'], color="green")
-            pub.sendMessage('piservo:move', angle=-20)
             self.set_eye('blue')
         elif state == Config.STATE_ALERT:
             if self.state == Config.STATE_RESTING or self.state == Config.STATE_SLEEPING:
                 pub.sendMessage('wake')
                 pub.sendMessage('animate', action="wake")
             # pub.sendMessage('animate', action="stand")
-            pub.sendMessage('piservo:move', angle=0)
-            pub.sendMessage("led", identifiers=['status1'], color="blue")
         self.state = state
 
     def is_asleep(self):

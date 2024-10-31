@@ -1,13 +1,10 @@
-
+pygame
 
 # Publisher / subscriber service
 pypubsub
 
-# pigpio ## not working, trying alternative
-gpiozero
-
 # Speech recognition
-# SpeechRecognition
+SpeechRecognition
 #pocketsphinx
 
 # Chat bot
@@ -16,31 +13,12 @@ gpiozero
 #chatterbot_corpus
 
 # Braillespeak
-# pysine ## FAILING
+pysine
 
 #cv2
-# opencv-python
-# face-recognition
-# imutils
+opencv-python
+face-recognition
+imutils
 
 # nightly loop
 schedule
-
-colour
-
-#Config yaml
-pyyaml
-
-# Translator
-googletrans==3.1.0a0
-
-#i2c neopixels
-# adafruit-extended-bus
-# adafruit-blinka
-adafruit-circuitpython-seesaw
-
-pygame
-
-nltk
-
-# viam-sdk[mlmodel]
