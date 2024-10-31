@@ -1,1 +1,2 @@
-sudo pkill -f /home/pi/really-useful-robot/main.py
+sudo pkill -f main.py
+# sudo pkill -f main_viam.py
